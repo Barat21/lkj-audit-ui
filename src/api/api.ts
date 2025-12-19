@@ -20,7 +20,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export const api = {
   getTransactions: async (): Promise<Transaction[]> => {
     try {
-      const response = await fetch('http://localhost:8080/api/transactions');
+      const response = await fetch('https://lkjaudit-api-latest.onrender.com/api/transactions');
       if (!response.ok) {
         throw new Error(`Error fetching transactions: ${response.statusText}`);
       }
@@ -39,7 +39,7 @@ export const api = {
       formData.append('file', file);
       formData.append('bankName', bankName);
 
-      const response = await fetch('http://localhost:8080/api/upload-statement', {
+      const response = await fetch('https://lkjaudit-api-latest.onrender.com/api/upload-statement', {
         method: 'POST',
         body: formData,
       });
@@ -69,7 +69,7 @@ export const api = {
 
       console.log('Sending KYC Payload:', payload);
 
-      const response = await fetch('http://localhost:8080/api/kyc', {
+      const response = await fetch('https://lkjaudit-api-latest.onrender.com/api/kyc', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -195,7 +195,7 @@ export const api = {
   exportMonthlyData: async (month: number, year: number): Promise<Blob> => {
     try {
       const response = await fetch(
-        `http://localhost:8080/api/auditor/bills/download?year=${year}&month=${month}`
+        `https://lkjaudit-api-latest.onrender.com/api/auditor/bills/download?year=${year}&month=${month}`
       );
       if (!response.ok) {
         throw new Error(`Error exporting data: ${response.statusText}`);
@@ -210,7 +210,7 @@ export const api = {
   getSuggestions: async (customerName: string) => {
     try {
       const response = await fetch(
-        `http://localhost:8080/api/kyc/autocomplete?name=${encodeURIComponent(
+        `https://lkjaudit-api-latest.onrender.com/api/kyc/autocomplete?name=${encodeURIComponent(
           customerName
         )}`
       );
@@ -232,7 +232,7 @@ export const api = {
 
   getSettings: async (): Promise<{ lastSerial: string }> => {
     try {
-      const response = await fetch('http://localhost:8080/api/settings');
+      const response = await fetch('https://lkjaudit-api-latest.onrender.com/api/settings');
       if (!response.ok) {
         throw new Error(`Error fetching settings: ${response.statusText}`);
       }
@@ -246,7 +246,7 @@ export const api = {
   saveSettings: async (lastSerial: string): Promise<void> => {
     try {
       const response = await fetch(
-        `http://localhost:8080/api/saveSettings?lastSerial=${lastSerial}`,
+        `https://lkjaudit-api-latest.onrender.com/api/saveSettings?lastSerial=${lastSerial}`,
         {
           method: 'POST',
         }
@@ -263,7 +263,7 @@ export const api = {
   cleanupData: async (month: number, year: number): Promise<void> => {
     try {
       const response = await fetch(
-        `http://localhost:8080/api/bills/cleanup?year=${year}&month=${month}`,
+        `https://lkjaudit-api-latest.onrender.com/api/bills/cleanup?year=${year}&month=${month}`,
         {
           method: 'DELETE',
         }
