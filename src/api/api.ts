@@ -276,4 +276,45 @@ export const api = {
       throw error;
     }
   },
+
+  saveTransaction: async (
+    transaction: Transaction | Omit<Transaction, 'id'>
+  ): Promise<Transaction> => {
+    try {
+      const response = await fetch(
+        'https://lkjaudit-api-latest.onrender.com/api/transactions/save',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(transaction),
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`Error saving transaction: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to save transaction', error);
+      throw error;
+    }
+  },
+
+  deleteTransaction: async (id: string): Promise<void> => {
+    try {
+      const response = await fetch(
+        `https://lkjaudit-api-latest.onrender.com/api/transactions/delete?id=${id}`,
+        {
+          method: 'DELETE',
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`Error deleting transaction: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Failed to delete transaction', error);
+      throw error;
+    }
+  },
 };

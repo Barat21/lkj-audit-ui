@@ -9,7 +9,7 @@ import FileUploader from '../components/ui/FileUploader';
 import Modal from '../components/ui/Modal';
 import { api } from '../api/api';
 import { Transaction } from '../api/mockData';
-import { Upload, Search } from 'lucide-react';
+import { Upload, Search, Plus, Edit2, Trash2 } from 'lucide-react';
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -31,6 +31,20 @@ export default function Transactions() {
     aadhaarLast4: '',
     gst: '',
     notes: '',
+  });
+
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [transactionModalMode, setTransactionModalMode] = useState<
+    'add' | 'edit'
+  >('add');
+  const [transactionForm, setTransactionForm] = useState<
+    Omit<Transaction, 'id' | 'kycStatus' | 'billId'>
+  >({
+    date: new Date().toISOString().split('T')[0],
+    sender: '',
+    particulars: '',
+    amount: 0,
+    type: 'CREDIT',
   });
 
   const [filters, setFilters] = useState({
@@ -141,8 +155,6 @@ export default function Transactions() {
   const handleSaveKyc = async () => {
     if (!selectedTransaction) return;
 
-    console.log('KYC Form Data before save:', kycForm);
-
     if (!kycForm.pan && !kycForm.aadhaarLast4 && !kycForm.gst) {
       alert('Please fill at least one of PAN, GST, or Aadhaar');
       return;
@@ -164,6 +176,75 @@ export default function Transactions() {
     } catch (error) {
       console.error('Error saving KYC:', error);
       alert('Error saving KYC');
+    }
+  };
+
+  const openTransactionModal = (transaction?: Transaction) => {
+    if (transaction) {
+      setTransactionModalMode('edit');
+      setTransactionForm({
+        date: transaction.date,
+        sender: transaction.sender,
+        particulars: transaction.particulars,
+        amount: transaction.amount,
+        type: transaction.type,
+      });
+      setSelectedTransaction(transaction);
+    } else {
+      setTransactionModalMode('add');
+      setTransactionForm({
+        date: new Date().toISOString().split('T')[0],
+        sender: '',
+        particulars: '',
+        amount: 0,
+        type: 'CREDIT',
+      });
+      setSelectedTransaction(null);
+    }
+    setShowTransactionModal(true);
+  };
+
+  const handleSaveTransaction = async () => {
+    if (
+      !transactionForm.sender ||
+      !transactionForm.amount ||
+      !transactionForm.date
+    ) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const payload = {
+        ...transactionForm,
+        ...(transactionModalMode === 'edit' && selectedTransaction
+          ? { id: selectedTransaction.id }
+          : {}),
+      };
+
+      await api.saveTransaction(payload as any);
+      alert(
+        `Transaction ${transactionModalMode === 'add' ? 'added' : 'updated'
+        } successfully!`
+      );
+      setShowTransactionModal(false);
+      await loadTransactions();
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+      alert('Error saving transaction');
+    }
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this transaction?')) return;
+
+    try {
+      await api.deleteTransaction(id);
+      alert('Transaction deleted successfully!');
+      await loadTransactions();
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      alert('Error deleting transaction');
     }
   };
 
@@ -192,9 +273,7 @@ export default function Transactions() {
     {
       header: 'Amount',
       accessor: (row) => (
-        <span className="font-semibold">
-          ₹{row.amount.toLocaleString()}
-        </span>
+        <span className="font-semibold">₹{row.amount.toLocaleString()}</span>
       ),
     },
     {
@@ -205,7 +284,7 @@ export default function Transactions() {
         </Badge>
       ),
     },
-    {
+    /*{
       header: 'KYC Status',
       accessor: (row) => {
         if (row.kycStatus === 'N/A') {
@@ -213,9 +292,7 @@ export default function Transactions() {
         }
         return (
           <Badge
-            variant={
-              row.kycStatus === 'COMPLETED' ? 'success' : 'warning'
-            }
+            variant={row.kycStatus === 'COMPLETED' ? 'success' : 'warning'}
           >
             {row.kycStatus}
           </Badge>
@@ -229,7 +306,7 @@ export default function Transactions() {
           {row.billId ? 'Yes' : 'No'}
         </Badge>
       ),
-    },
+    },*/
     {
       header: 'Actions',
       accessor: (row) => (
@@ -240,7 +317,7 @@ export default function Transactions() {
               variant="primary"
               onClick={() => openKycForm(row)}
             >
-              Perform KYC
+              KYC
             </Button>
           )}
           {row.type === 'CREDIT' && !row.billId && (
@@ -249,9 +326,23 @@ export default function Transactions() {
               variant="success"
               onClick={() => handleGenerateBill(row.id)}
             >
-              Generate Bill
+              Bill
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => openTransactionModal(row)}
+          >
+            <Edit2 size={14} />
+          </Button>
+          <Button
+            size="sm"
+            variant="danger"
+            onClick={() => handleDeleteTransaction(row.id)}
+          >
+            <Trash2 size={14} />
+          </Button>
         </div>
       ),
     },
@@ -270,13 +361,16 @@ export default function Transactions() {
       <Card
         title="Upload Bank Statement"
         action={
-          <Button
-            variant="primary"
-            onClick={() => setShowUploadModal(true)}
-          >
-            <Upload size={18} className="mr-2 inline" />
-            Upload Statement
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => openTransactionModal()}>
+              <Plus size={18} className="mr-2 inline" />
+              Add Transaction
+            </Button>
+            <Button variant="primary" onClick={() => setShowUploadModal(true)}>
+              <Upload size={18} className="mr-2 inline" />
+              Upload Statement
+            </Button>
+          </div>
         }
       >
         <p className="text-sm text-gray-600">
@@ -321,9 +415,7 @@ export default function Transactions() {
             label="Date From"
             type="date"
             value={filters.dateFrom}
-            onChange={(value) =>
-              setFilters({ ...filters, dateFrom: value })
-            }
+            onChange={(value) => setFilters({ ...filters, dateFrom: value })}
           />
 
           <Input
@@ -368,10 +460,7 @@ export default function Transactions() {
               { value: 'Karur Vysya Bank', label: 'Karur Vysya Bank' },
             ]}
           />
-          <FileUploader
-            onFileSelect={handleFileUpload}
-            accept=".pdf,.csv"
-          />
+          <FileUploader onFileSelect={handleFileUpload} accept=".pdf,.csv" />
           {uploading && (
             <p className="text-center text-gray-600">Uploading...</p>
           )}
@@ -438,10 +527,7 @@ export default function Transactions() {
           </div>
 
           <div className="flex gap-3 justify-end pt-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowKycModal(false)}
-            >
+            <Button variant="outline" onClick={() => setShowKycModal(false)}>
               Cancel
             </Button>
             <Button variant="success" onClick={handleSaveKyc}>
@@ -450,6 +536,95 @@ export default function Transactions() {
           </div>
         </div>
       </Modal>
-    </div >
+
+      <Modal
+        isOpen={showTransactionModal}
+        onClose={() => setShowTransactionModal(false)}
+        title={
+          transactionModalMode === 'add'
+            ? 'Add Transaction'
+            : 'Edit Transaction'
+        }
+        size="md"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Date"
+            type="date"
+            value={transactionForm.date}
+            onChange={(value) =>
+              setTransactionForm({ ...transactionForm, date: value })
+            }
+            required
+          />
+
+          <Input
+            label="Sender/Receiver"
+            value={transactionForm.sender}
+            onChange={(value) =>
+              setTransactionForm({ ...transactionForm, sender: value })
+            }
+            placeholder="Name of person/entity"
+            required
+          />
+
+          <Input
+            label="Particulars"
+            value={transactionForm.particulars}
+            onChange={(value) =>
+              setTransactionForm({
+                ...transactionForm,
+                particulars: value,
+              })
+            }
+            placeholder="UPI/NEFT/IMPS details..."
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Amount"
+              type="number"
+              value={transactionForm.amount.toString()}
+              onChange={(value) =>
+                setTransactionForm({
+                  ...transactionForm,
+                  amount: parseFloat(value) || 0,
+                })
+              }
+              required
+            />
+
+            <Select
+              label="Type"
+              value={transactionForm.type}
+              onChange={(value) =>
+                setTransactionForm({
+                  ...transactionForm,
+                  type: value as 'CREDIT' | 'DEBIT',
+                })
+              }
+              options={[
+                { value: 'CREDIT', label: 'Credit' },
+                { value: 'DEBIT', label: 'Debit' },
+              ]}
+            />
+          </div>
+
+          <div className="flex gap-3 justify-end pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowTransactionModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleSaveTransaction}>
+              {transactionModalMode === 'add'
+                ? 'Add Transaction'
+                : 'Update Transaction'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
   );
 }
