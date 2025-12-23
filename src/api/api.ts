@@ -260,7 +260,7 @@ export const api = {
     }
   },
 
-  cleanupData: async (month: number, year: number): Promise<void> => {
+  cleanupData: async (month: number, year: number): Promise<{ message: string }> => {
     try {
       const response = await fetch(
         `https://lkjaudit-api-latest.onrender.com/api/bills/cleanup?year=${year}&month=${month}`,
@@ -271,6 +271,7 @@ export const api = {
       if (!response.ok) {
         throw new Error(`Error cleaning up data: ${response.statusText}`);
       }
+      return await response.json();
     } catch (error) {
       console.error('Failed to cleanup data', error);
       throw error;

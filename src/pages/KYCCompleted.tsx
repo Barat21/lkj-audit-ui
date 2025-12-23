@@ -7,6 +7,8 @@ import Modal from '../components/ui/Modal';
 import { api } from '../api/api';
 import { KYC } from '../api/mockData';
 import { Edit } from 'lucide-react';
+import { useAlert } from '../context/AlertContext';
+import { useLoading } from '../context/LoadingContext';
 
 export default function KYCCompleted() {
   const [kycs, setKycs] = useState<KYC[]>([]);
@@ -15,6 +17,8 @@ export default function KYCCompleted() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedKyc, setSelectedKyc] = useState<KYC | null>(null);
+  const { showAlert } = useAlert();
+  const { withLoading } = useLoading();
 
   const [kycForm, setKycForm] = useState({
     name: '',
@@ -82,27 +86,29 @@ export default function KYCCompleted() {
     if (!selectedKyc) return;
 
     if (!kycForm.pan && !kycForm.aadhaarLast4 && !kycForm.gst) {
-      alert('Please fill at least one of PAN, GST, or Aadhaar');
+      showAlert('Please fill at least one of PAN, GST, or Aadhaar', 'Information Missing', 'info');
       return;
     }
 
-    try {
-      await api.saveKyc({
-        name: kycForm.name,
-        pan: kycForm.pan,
-        aadhaarLast4: kycForm.aadhaarLast4,
-        gst: kycForm.gst,
-        notes: kycForm.notes,
-        linkedTransactions: selectedKyc.linkedTransactions,
-      });
+    await withLoading(async () => {
+      try {
+        await api.saveKyc({
+          name: kycForm.name,
+          pan: kycForm.pan,
+          aadhaarLast4: kycForm.aadhaarLast4,
+          gst: kycForm.gst,
+          notes: kycForm.notes,
+          linkedTransactions: selectedKyc.linkedTransactions,
+        });
 
-      alert('KYC updated successfully!');
-      setShowEditModal(false);
-      await loadData();
-    } catch (error) {
-      console.error('Error updating KYC:', error);
-      alert('Error updating KYC');
-    }
+        showAlert('KYC updated successfully!', 'Success', 'success');
+        setShowEditModal(false);
+        await loadData();
+      } catch (error) {
+        console.error('Error updating KYC:', error);
+        showAlert('Error updating KYC', 'Error', 'error');
+      }
+    });
   };
 
   const columns: Column<KYC>[] = [

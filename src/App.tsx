@@ -8,6 +8,8 @@ import TDSMonitor from './pages/TDSMonitor';
 import BillsExport from './pages/BillsExport';
 import Settings from './pages/Settings';
 import LoginPage from './pages/LoginPage';
+import { AlertProvider } from './context/AlertContext';
+import { LoadingProvider } from './context/LoadingContext';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -72,14 +74,18 @@ function App() {
   }
 
   return (
-    <Layout
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      title={getPageTitle()}
-      onLogout={handleLogout}
-    >
-      {renderPage()}
-    </Layout>
+    <AlertProvider>
+      <LoadingProvider>
+        <Layout
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          title={getPageTitle()}
+          onLogout={handleLogout}
+        >
+          {renderPage()}
+        </Layout>
+      </LoadingProvider>
+    </AlertProvider>
   );
 }
 

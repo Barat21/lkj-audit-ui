@@ -9,7 +9,9 @@ import FileUploader from '../components/ui/FileUploader';
 import Modal from '../components/ui/Modal';
 import { api } from '../api/api';
 import { Transaction } from '../api/mockData';
-import { Upload, Search, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Upload, Plus, Edit2, Trash2 } from 'lucide-react';
+import { useAlert } from '../context/AlertContext';
+import { useLoading } from '../context/LoadingContext';
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -18,6 +20,8 @@ export default function Transactions() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const { showAlert } = useAlert();
+  const { withLoading } = useLoading();
 
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedBank, setSelectedBank] = useState('');
@@ -104,43 +108,53 @@ export default function Transactions() {
       filtered = filtered.filter((t) => t.date <= filters.dateTo);
     }
 
+    // Sort to show PENDING KYC first
+    filtered.sort((a, b) => {
+      if (a.kycStatus === 'PENDING' && b.kycStatus !== 'PENDING') return -1;
+      if (a.kycStatus !== 'PENDING' && b.kycStatus === 'PENDING') return 1;
+      return 0;
+    });
+
     setFilteredTransactions(filtered);
     setCurrentPage(1);
   };
 
   const handleFileUpload = async (file: File) => {
     if (!selectedBank) {
-      alert('Please select a bank');
+      showAlert('Please select a bank', 'Bank Required', 'info');
       return;
     }
-    try {
-      setUploading(true);
-      setUploading(true);
-      await api.uploadStatement(file, selectedBank);
-      await loadTransactions();
-      setShowUploadModal(false);
-      setSelectedBank(''); // Reset bank selection
-      alert('Statement uploaded successfully!');
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('Error uploading file');
-    } finally {
-      setUploading(false);
-    }
+    await withLoading(async () => {
+      try {
+        setUploading(true);
+        await api.uploadStatement(file, selectedBank);
+        await loadTransactions();
+        setShowUploadModal(false);
+        setSelectedBank(''); // Reset bank selection
+        showAlert('Statement uploaded successfully!', 'Success', 'success');
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        showAlert('Error uploading file', 'Error', 'error');
+      } finally {
+        setUploading(false);
+      }
+    });
   };
 
   const handleGenerateBill = async (txnId: string) => {
-    try {
-      await api.generateBill(txnId);
-      await loadTransactions();
-      alert('Bill generated successfully!');
-    } catch (error) {
-      console.error('Error generating bill:', error);
-    }
+    await withLoading(async () => {
+      try {
+        await api.generateBill(txnId);
+        await loadTransactions();
+        showAlert('Bill generated successfully!', 'Success', 'success');
+      } catch (error) {
+        console.error('Error generating bill:', error);
+      }
+    });
   };
 
 
-  const openKycForm = (transaction: Transaction) => {
+  const openKycForm = async (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setKycForm({
       name: transaction.sender,
@@ -150,33 +164,50 @@ export default function Transactions() {
       notes: '',
     });
     setShowKycModal(true);
+
+    // Trigger autocompletion
+    try {
+      const suggestions = await api.getSuggestions(transaction.sender);
+      if (suggestions) {
+        setKycForm((prev) => ({
+          ...prev,
+          pan: suggestions.pans[0] || '',
+          aadhaarLast4: suggestions.aadhaars[0] || '',
+          gst: suggestions.gsts[0] || '',
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch KYC suggestions:', error);
+    }
   };
 
   const handleSaveKyc = async () => {
     if (!selectedTransaction) return;
 
     if (!kycForm.pan && !kycForm.aadhaarLast4 && !kycForm.gst) {
-      alert('Please fill at least one of PAN, GST, or Aadhaar');
+      showAlert('Please fill at least one of PAN, GST, or Aadhaar', 'Information Missing', 'info');
       return;
     }
 
-    try {
-      await api.saveKyc({
-        name: kycForm.name,
-        pan: kycForm.pan,
-        aadhaarLast4: kycForm.aadhaarLast4,
-        gst: kycForm.gst,
-        notes: kycForm.notes,
-        linkedTransactions: [selectedTransaction.id],
-      });
+    await withLoading(async () => {
+      try {
+        await api.saveKyc({
+          name: kycForm.name,
+          pan: kycForm.pan,
+          aadhaarLast4: kycForm.aadhaarLast4,
+          gst: kycForm.gst,
+          notes: kycForm.notes,
+          linkedTransactions: [selectedTransaction.id],
+        });
 
-      alert('KYC saved successfully!');
-      setShowKycModal(false);
-      await loadTransactions();
-    } catch (error) {
-      console.error('Error saving KYC:', error);
-      alert('Error saving KYC');
-    }
+        showAlert('KYC saved successfully!', 'Success', 'success');
+        setShowKycModal(false);
+        await loadTransactions();
+      } catch (error) {
+        console.error('Error saving KYC:', error);
+        showAlert('Error saving KYC', 'Error', 'error');
+      }
+    });
   };
 
   const openTransactionModal = (transaction?: Transaction) => {
@@ -210,42 +241,48 @@ export default function Transactions() {
       !transactionForm.amount ||
       !transactionForm.date
     ) {
-      alert('Please fill in all required fields');
+      showAlert('Please fill in all required fields', 'Information Missing', 'info');
       return;
     }
 
-    try {
-      const payload = {
-        ...transactionForm,
-        ...(transactionModalMode === 'edit' && selectedTransaction
-          ? { id: selectedTransaction.id }
-          : {}),
-      };
+    await withLoading(async () => {
+      try {
+        const payload = {
+          ...transactionForm,
+          ...(transactionModalMode === 'edit' && selectedTransaction
+            ? { id: selectedTransaction.id }
+            : {}),
+        };
 
-      await api.saveTransaction(payload as any);
-      alert(
-        `Transaction ${transactionModalMode === 'add' ? 'added' : 'updated'
-        } successfully!`
-      );
-      setShowTransactionModal(false);
-      await loadTransactions();
-    } catch (error) {
-      console.error('Error saving transaction:', error);
-      alert('Error saving transaction');
-    }
+        await api.saveTransaction(payload as any);
+        showAlert(
+          `Transaction ${transactionModalMode === 'add' ? 'added' : 'updated'
+          } successfully!`,
+          'Success',
+          'success'
+        );
+        setShowTransactionModal(false);
+        await loadTransactions();
+      } catch (error) {
+        console.error('Error saving transaction:', error);
+        showAlert('Error saving transaction', 'Error', 'error');
+      }
+    });
   };
 
   const handleDeleteTransaction = async (id: string) => {
     if (!confirm('Are you sure you want to delete this transaction?')) return;
 
-    try {
-      await api.deleteTransaction(id);
-      alert('Transaction deleted successfully!');
-      await loadTransactions();
-    } catch (error) {
-      console.error('Error deleting transaction:', error);
-      alert('Error deleting transaction');
-    }
+    await withLoading(async () => {
+      try {
+        await api.deleteTransaction(id);
+        showAlert('Transaction deleted successfully!', 'Success', 'success');
+        await loadTransactions();
+      } catch (error) {
+        console.error('Error deleting transaction:', error);
+        showAlert('Error deleting transaction', 'Error', 'error');
+      }
+    });
   };
 
   const paginatedData = filteredTransactions.slice(
@@ -263,12 +300,8 @@ export default function Transactions() {
       accessor: 'sender',
     },
     {
-      header: 'Description',
-      accessor: (row) => (
-        <span className="text-xs text-gray-600 max-w-xs truncate block">
-          {row.particulars}
-        </span>
-      ),
+      header: 'Transaction ID',
+      accessor: 'id',
     },
     {
       header: 'Amount',
@@ -548,6 +581,16 @@ export default function Transactions() {
         size="md"
       >
         <div className="space-y-4">
+          {transactionModalMode === 'edit' && selectedTransaction && (
+            <Input
+              label="Transaction ID"
+              value={selectedTransaction.id}
+              onChange={() => { }}
+              readOnly
+              className="bg-gray-50 font-mono text-xs"
+            />
+          )}
+
           <Input
             label="Date"
             type="date"

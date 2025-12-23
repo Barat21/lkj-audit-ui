@@ -7,6 +7,8 @@ import Input from '../components/ui/Input';
 import { api } from '../api/api';
 import { Transaction } from '../api/mockData';
 import { UserPlus } from 'lucide-react';
+import { useAlert } from '../context/AlertContext';
+import { useLoading } from '../context/LoadingContext';
 
 export default function KYCRequired() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -14,6 +16,8 @@ export default function KYCRequired() {
   const [showKycModal, setShowKycModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
+  const { showAlert } = useAlert();
+  const { withLoading } = useLoading();
 
   const [kycForm, setKycForm] = useState({
     name: '',
@@ -73,27 +77,29 @@ export default function KYCRequired() {
     if (!selectedTransaction) return;
 
     if (!kycForm.pan && !kycForm.aadhaarLast4 && !kycForm.gst) {
-      alert('Please fill at least one of PAN, GST, or Aadhaar');
+      showAlert('Please fill at least one of PAN, GST, or Aadhaar', 'Information Missing', 'info');
       return;
     }
 
-    try {
-      await api.saveKyc({
-        name: kycForm.name,
-        pan: kycForm.pan,
-        aadhaarLast4: kycForm.aadhaarLast4,
-        gst: kycForm.gst,
-        notes: kycForm.notes,
-        linkedTransactions: [selectedTransaction.id],
-      });
+    await withLoading(async () => {
+      try {
+        await api.saveKyc({
+          name: kycForm.name,
+          pan: kycForm.pan,
+          aadhaarLast4: kycForm.aadhaarLast4,
+          gst: kycForm.gst,
+          notes: kycForm.notes,
+          linkedTransactions: [selectedTransaction.id],
+        });
 
-      alert('KYC saved successfully!');
-      setShowKycModal(false);
-      await loadData();
-    } catch (error) {
-      console.error('Error saving KYC:', error);
-      alert('Error saving KYC');
-    }
+        showAlert('KYC saved successfully!', 'Success', 'success');
+        setShowKycModal(false);
+        await loadData();
+      } catch (error) {
+        console.error('Error saving KYC:', error);
+        showAlert('Error saving KYC', 'Error', 'error');
+      }
+    });
   };
 
   const getLinkedTransactionsCount = (sender: string) => {

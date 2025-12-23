@@ -7,12 +7,14 @@ import Select from '../components/ui/Select';
 import { api } from '../api/api';
 import { TDSVendor } from '../api/mockData';
 import { Send, AlertTriangle } from 'lucide-react';
+import { useAlert } from '../context/AlertContext';
 
 export default function TDSMonitor() {
   const [vendors, setVendors] = useState<TDSVendor[]>([]);
   const [filteredVendors, setFilteredVendors] = useState<TDSVendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const { showAlert } = useAlert();
 
   useEffect(() => {
     loadData();
@@ -45,7 +47,7 @@ export default function TDSMonitor() {
   };
 
   const handleSendReminder = (vendorName: string) => {
-    alert(`Reminder sent to ${vendorName} (mock)`);
+    showAlert(`Reminder sent to ${vendorName} (mock)`, 'Reminder Sent', 'success');
   };
 
   const getStatusBadge = (status: string) => {
@@ -69,8 +71,8 @@ export default function TDSMonitor() {
       percentage >= 100
         ? 'bg-red-500'
         : percentage >= 80
-        ? 'bg-yellow-500'
-        : 'bg-green-500';
+          ? 'bg-yellow-500'
+          : 'bg-green-500';
 
     return (
       <div className="w-full bg-gray-200 rounded-full h-2">

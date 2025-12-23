@@ -4,6 +4,8 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { Save } from 'lucide-react';
 import { api } from '../api/api';
+import { useAlert } from '../context/AlertContext';
+import { useLoading } from '../context/LoadingContext';
 
 export default function Settings() {
   const [billingSettings, setBillingSettings] = useState({
@@ -11,6 +13,8 @@ export default function Settings() {
   });
 
   const [loading, setLoading] = useState(false);
+  const { showAlert } = useAlert();
+  const { withLoading } = useLoading();
 
   useEffect(() => {
     loadSettings();
@@ -26,16 +30,18 @@ export default function Settings() {
   };
 
   const handleSaveBillingSettings = async () => {
-    try {
-      setLoading(true);
-      await api.saveSettings(billingSettings.serialPrefix);
-      alert('Settings saved successfully!');
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      alert('Error saving settings');
-    } finally {
-      setLoading(false);
-    }
+    await withLoading(async () => {
+      try {
+        setLoading(true);
+        await api.saveSettings(billingSettings.serialPrefix);
+        showAlert('Settings saved successfully!', 'Success', 'success');
+      } catch (error) {
+        console.error('Error saving settings:', error);
+        showAlert('Error saving settings', 'Error', 'error');
+      } finally {
+        setLoading(false);
+      }
+    });
   };
 
   return (

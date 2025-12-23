@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Upload, File as FileIcon, X } from 'lucide-react';
+import { useAlert } from '../../context/AlertContext';
 
 interface FileUploaderProps {
   onFileSelect: (file: File) => void;
@@ -14,6 +15,7 @@ export default function FileUploader({
 }: FileUploaderProps) {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const { showAlert } = useAlert();
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -37,7 +39,7 @@ export default function FileUploader({
           setSelectedFile(file);
           onFileSelect(file);
         } else {
-          alert(`File size must be less than ${maxSize / 1024 / 1024}MB`);
+          showAlert(`File size must be less than ${maxSize / 1024 / 1024}MB`, 'File Too Large', 'error');
         }
       }
     },
@@ -53,7 +55,7 @@ export default function FileUploader({
           setSelectedFile(file);
           onFileSelect(file);
         } else {
-          alert(`File size must be less than ${maxSize / 1024 / 1024}MB`);
+          showAlert(`File size must be less than ${maxSize / 1024 / 1024}MB`, 'File Too Large', 'error');
         }
       }
     },
@@ -66,11 +68,10 @@ export default function FileUploader({
 
   return (
     <div
-      className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-        dragActive
-          ? 'border-blue-500 bg-blue-50'
-          : 'border-gray-300 hover:border-gray-400'
-      }`}
+      className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
+        ? 'border-blue-500 bg-blue-50'
+        : 'border-gray-300 hover:border-gray-400'
+        }`}
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
