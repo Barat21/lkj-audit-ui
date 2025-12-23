@@ -9,8 +9,10 @@ import { KYC } from '../api/mockData';
 import { Edit } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
 import { useLoading } from '../context/LoadingContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function KYCCompleted() {
+  const { t } = useLanguage();
   const [kycs, setKycs] = useState<KYC[]>([]);
   const [filteredKycs, setFilteredKycs] = useState<KYC[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +88,7 @@ export default function KYCCompleted() {
     if (!selectedKyc) return;
 
     if (!kycForm.pan && !kycForm.aadhaarLast4 && !kycForm.gst) {
-      showAlert('Please fill at least one of PAN, GST, or Aadhaar', 'Information Missing', 'info');
+      showAlert('Please fill at least one of PAN, GST, or Aadhaar', t('info_missing'), 'info');
       return;
     }
 
@@ -101,19 +103,19 @@ export default function KYCCompleted() {
           linkedTransactions: selectedKyc.linkedTransactions,
         });
 
-        showAlert('KYC updated successfully!', 'Success', 'success');
+        showAlert(t('kyc_updated_success'), t('success'), 'success');
         setShowEditModal(false);
         await loadData();
       } catch (error) {
         console.error('Error updating KYC:', error);
-        showAlert('Error updating KYC', 'Error', 'error');
+        showAlert('Error updating KYC', t('error'), 'error');
       }
     });
   };
 
   const columns: Column<KYC>[] = [
     {
-      header: 'Customer Name',
+      header: t('customer_name'),
       accessor: 'name',
     },
     {
@@ -121,27 +123,28 @@ export default function KYCCompleted() {
       accessor: 'pan',
     },
     {
-      header: 'Aadhaar Last 4',
+      header: t('aadhaar_last_4'),
       accessor: 'aadhaarLast4',
     },
     {
-      header: 'Last Updated',
+      header: t('last_updated'),
       accessor: 'updatedAt',
     },
     {
-      header: 'Linked Transactions',
+      header: t('linked_transactions'),
       accessor: (row) => row.linkedTransactions.length,
     },
     {
-      header: 'Action',
+      header: t('action'),
       accessor: (row) => (
         <Button
           size="sm"
           variant="primary"
           onClick={() => openEditModal(row)}
         >
-          <Edit size={16} className="mr-2 inline" />
-          Edit KYC
+          <Edit size={16} className="mr-0 sm:mr-2 inline" />
+          <span className="hidden sm:inline">{t('edit_kyc')}</span>
+          <span className="sm:hidden">{t('edit')}</span>
         </Button>
       ),
     },
@@ -150,7 +153,7 @@ export default function KYCCompleted() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Loading...</p>
+        <p className="text-gray-500">{t('loading')}...</p>
       </div>
     );
   }
@@ -160,14 +163,14 @@ export default function KYCCompleted() {
       <Card>
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Completed KYC Records
+            {t('completed_kycs_title')}
           </h3>
 
           <div className="max-w-md">
             <Input
               value={searchTerm}
               onChange={setSearchTerm}
-              placeholder="Search by customer name..."
+              placeholder={t('search_customer_placeholder')}
             />
           </div>
         </div>
@@ -182,7 +185,7 @@ export default function KYCCompleted() {
       <Modal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
-        title="Edit KYC Details"
+        title={t('edit_kyc_details')}
         size="md"
       >
         <datalist id="pan-list-edit">
@@ -203,14 +206,14 @@ export default function KYCCompleted() {
 
         <div className="space-y-4">
           <Input
-            label="Customer Name"
+            label={t('customer_name')}
             value={kycForm.name}
             onChange={(value) => setKycForm({ ...kycForm, name: value })}
             required
           />
 
           <Input
-            label="PAN Number"
+            label={t('pan_number')}
             value={kycForm.pan}
             onChange={(value) =>
               setKycForm({ ...kycForm, pan: value.toUpperCase() })
@@ -221,7 +224,7 @@ export default function KYCCompleted() {
           />
 
           <Input
-            label="Aadhaar Last 4 Digits"
+            label={t('aadhaar_last_4')}
             value={kycForm.aadhaarLast4}
             onChange={(value) =>
               setKycForm({ ...kycForm, aadhaarLast4: value })
@@ -232,7 +235,7 @@ export default function KYCCompleted() {
           />
 
           <Input
-            label="GST Number"
+            label={t('gst_number')}
             value={kycForm.gst}
             onChange={(value) =>
               setKycForm((prev) => ({ ...prev, gst: value.toUpperCase() }))
@@ -244,7 +247,7 @@ export default function KYCCompleted() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Notes
+              {t('notes')}
             </label>
             <textarea
               value={kycForm.notes}
@@ -253,7 +256,7 @@ export default function KYCCompleted() {
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               rows={4}
-              placeholder="Additional notes..."
+              placeholder={t('notes')}
             />
           </div>
 
@@ -262,10 +265,10 @@ export default function KYCCompleted() {
               variant="outline"
               onClick={() => setShowEditModal(false)}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button variant="success" onClick={handleUpdateKyc}>
-              Update KYC
+              {t('update_kyc')}
             </Button>
           </div>
         </div>

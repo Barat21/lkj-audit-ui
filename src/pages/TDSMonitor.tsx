@@ -8,8 +8,10 @@ import { api } from '../api/api';
 import { TDSVendor } from '../api/mockData';
 import { Send, AlertTriangle } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function TDSMonitor() {
+  const { t } = useLanguage();
   const [vendors, setVendors] = useState<TDSVendor[]>([]);
   const [filteredVendors, setFilteredVendors] = useState<TDSVendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,17 +49,17 @@ export default function TDSMonitor() {
   };
 
   const handleSendReminder = (vendorName: string) => {
-    showAlert(`Reminder sent to ${vendorName} (mock)`, 'Reminder Sent', 'success');
+    showAlert(t('reminder_sent_success').replace('{name}', vendorName), t('success'), 'success');
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'TDS_REQUIRED':
-        return <Badge variant="danger">TDS Required</Badge>;
+        return <Badge variant="danger">{t('tds_required')}</Badge>;
       case 'NEARING_LIMIT':
-        return <Badge variant="warning">Nearing Limit</Badge>;
+        return <Badge variant="warning">{t('nearing_limit')}</Badge>;
       case 'UNDER_LIMIT':
-        return <Badge variant="success">Under Limit</Badge>;
+        return <Badge variant="success">{t('under_limit')}</Badge>;
       default:
         return <Badge variant="default">{status}</Badge>;
     }
@@ -86,13 +88,13 @@ export default function TDSMonitor() {
 
   const columns: Column<TDSVendor>[] = [
     {
-      header: 'Vendor Name',
+      header: t('customer_name'),
       accessor: 'vendor',
     },
     {
-      header: 'Total Paid YTD',
+      header: t('total_paid_ytd'),
       accessor: (row) => (
-        <div>
+        <div className="min-w-[150px]">
           <span className="font-semibold block mb-1">
             ₹{row.paidYTD.toLocaleString()}
           </span>
@@ -101,19 +103,19 @@ export default function TDSMonitor() {
       ),
     },
     {
-      header: 'Limit',
+      header: t('limit_label'),
       accessor: () => '₹50,00,000',
     },
     {
-      header: 'Status',
+      header: t('kyc_status'),
       accessor: (row) => getStatusBadge(row.status),
     },
     {
-      header: 'Transactions',
+      header: t('transactions'),
       accessor: (row) => row.transactions.length,
     },
     {
-      header: 'Action',
+      header: t('action'),
       accessor: (row) => (
         <Button
           size="sm"
@@ -122,8 +124,9 @@ export default function TDSMonitor() {
           }
           onClick={() => handleSendReminder(row.vendor)}
         >
-          <Send size={16} className="mr-2 inline" />
-          Send Reminder
+          <Send size={16} className="mr-0 sm:mr-2 inline" />
+          <span className="hidden sm:inline">{t('send_reminder')}</span>
+          <span className="sm:hidden">{t('send')}</span>
         </Button>
       ),
     },
@@ -132,7 +135,7 @@ export default function TDSMonitor() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Loading...</p>
+        <p className="text-gray-500">{t('loading')}...</p>
       </div>
     );
   }
@@ -152,7 +155,7 @@ export default function TDSMonitor() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-2">
-                Vendors Exceeding Limit
+                {t('vendors_exceeding_limit')}
               </p>
               <p className="text-3xl font-bold text-red-600">
                 {tdsRequiredCount}
@@ -168,7 +171,7 @@ export default function TDSMonitor() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-2">
-                Vendors Nearing Limit
+                {t('vendors_nearing_limit')}
               </p>
               <p className="text-3xl font-bold text-yellow-600">
                 {nearingLimitCount}
@@ -183,7 +186,7 @@ export default function TDSMonitor() {
         <Card>
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-2">Total Vendors</p>
+              <p className="text-sm text-gray-600 mb-2">{t('total_vendors')}</p>
               <p className="text-3xl font-bold text-gray-800">
                 {vendors.length}
               </p>
@@ -198,19 +201,19 @@ export default function TDSMonitor() {
       <Card>
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            TDS Monitoring Dashboard
+            {t('tds_monitor_title')}
           </h3>
 
           <div className="max-w-xs">
             <Select
-              label="Filter by Status"
+              label={t('filter_by_status')}
               value={statusFilter}
               onChange={setStatusFilter}
               options={[
-                { value: '', label: 'All Vendors' },
-                { value: 'TDS_REQUIRED', label: 'TDS Required' },
-                { value: 'NEARING_LIMIT', label: 'Nearing Limit (≥40L)' },
-                { value: 'UNDER_LIMIT', label: 'Under Limit' },
+                { value: '', label: t('all_vendors') },
+                { value: 'TDS_REQUIRED', label: t('tds_required') },
+                { value: 'NEARING_LIMIT', label: t('nearing_limit_label') },
+                { value: 'UNDER_LIMIT', label: t('under_limit') },
               ]}
             />
           </div>
@@ -226,13 +229,10 @@ export default function TDSMonitor() {
       <Card>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h4 className="font-semibold text-blue-900 mb-2">
-            About TDS Monitoring
+            {t('about_tds_title')}
           </h4>
           <p className="text-sm text-blue-800">
-            This page tracks all outgoing payments (DEBITS) to vendors. When
-            total payments to a vendor exceed ₹50,00,000 in a financial year,
-            TDS (Tax Deducted at Source) must be applied. Vendors nearing the
-            limit (≥₹40,00,000) are also highlighted for proactive management.
+            {t('about_tds_desc')}
           </p>
         </div>
       </Card>

@@ -4,6 +4,7 @@ import SimpleBarChart from '../components/ui/SimpleBarChart';
 import SimplePieChart from '../components/ui/SimplePieChart';
 import { api } from '../api/api';
 import { Transaction } from '../api/mockData';
+import { useLanguage } from '../context/LanguageContext';
 import {
   TrendingUp,
   TrendingDown,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export default function Dashboard() {
+  const { t } = useLanguage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,42 +67,42 @@ export default function Dashboard() {
 
   const widgets = [
     {
-      title: 'Total Credits This Month',
+      title: t('total_credits_this_month'),
       value: `₹${totalCreditsThisMonth.toLocaleString()}`,
       icon: TrendingUp,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
     {
-      title: 'Total Debits This Month',
+      title: t('total_debits_this_month'),
       value: `₹${totalDebitsThisMonth.toLocaleString()}`,
       icon: TrendingDown,
       color: 'text-red-600',
       bgColor: 'bg-red-100',
     },
     {
-      title: 'Credits ≥ ₹50,000',
+      title: t('credits_above_50k'),
       value: creditsAbove50k.toString(),
       icon: AlertCircle,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
     },
     {
-      title: 'Pending KYC Count',
+      title: t('pending_kyc_count'),
       value: pendingKyc.toString(),
       icon: UserX,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-100',
     },
     {
-      title: 'Completed KYC Count',
+      title: t('completed_kyc_count'),
       value: completedKyc.toString(),
       icon: UserCheck,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
     {
-      title: 'TDS Alerts (>₹50L)',
+      title: t('tds_alerts_count'),
       value: tdsAlerts.toString(),
       icon: AlertTriangle,
       color: 'text-red-600',
@@ -109,14 +111,14 @@ export default function Dashboard() {
   ];
 
   const kycChartData = [
-    { label: 'Pending KYC', value: pendingKyc, color: '#f59e0b' },
-    { label: 'Completed KYC', value: completedKyc, color: '#10b981' },
+    { label: t('pending'), value: pendingKyc, color: '#f59e0b' },
+    { label: t('completed'), value: completedKyc, color: '#10b981' },
   ];
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Loading dashboard...</p>
+        <p className="text-gray-500">{t('loading_dashboard')}</p>
       </div>
     );
   }
@@ -145,11 +147,11 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title="Monthly Credits vs Debits">
+        <Card title={t('monthly_credits_vs_debits')}>
           <SimpleBarChart data={monthlyData} />
         </Card>
 
-        <Card title="KYC Status Overview">
+        <Card title={t('kyc_status_overview')}>
           <SimplePieChart data={kycChartData} />
         </Card>
       </div>

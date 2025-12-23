@@ -12,8 +12,10 @@ import { Transaction } from '../api/mockData';
 import { Upload, Plus, Edit2, Trash2 } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
 import { useLoading } from '../context/LoadingContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Transactions() {
+  const { t } = useLanguage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<
     Transaction[]
@@ -121,7 +123,7 @@ export default function Transactions() {
 
   const handleFileUpload = async (file: File) => {
     if (!selectedBank) {
-      showAlert('Please select a bank', 'Bank Required', 'info');
+      showAlert(t('please_select_bank'), t('bank_required'), 'info');
       return;
     }
     await withLoading(async () => {
@@ -185,7 +187,7 @@ export default function Transactions() {
     if (!selectedTransaction) return;
 
     if (!kycForm.pan && !kycForm.aadhaarLast4 && !kycForm.gst) {
-      showAlert('Please fill at least one of PAN, GST, or Aadhaar', 'Information Missing', 'info');
+      showAlert('Please fill at least one of PAN, GST, or Aadhaar', t('info_missing'), 'info');
       return;
     }
 
@@ -241,7 +243,7 @@ export default function Transactions() {
       !transactionForm.amount ||
       !transactionForm.date
     ) {
-      showAlert('Please fill in all required fields', 'Information Missing', 'info');
+      showAlert(t('please_fill_required'), t('info_missing'), 'info');
       return;
     }
 
@@ -256,8 +258,7 @@ export default function Transactions() {
 
         await api.saveTransaction(payload as any);
         showAlert(
-          `Transaction ${transactionModalMode === 'add' ? 'added' : 'updated'
-          } successfully!`,
+          transactionModalMode === 'add' ? t('txn_added_success') : t('txn_updated_success'),
           'Success',
           'success'
         );
@@ -292,65 +293,42 @@ export default function Transactions() {
 
   const columns: Column<Transaction>[] = [
     {
-      header: 'Date',
+      header: t('date'),
       accessor: 'date',
     },
     {
-      header: 'Sender/Receiver',
+      header: t('sender_receiver'),
       accessor: 'sender',
     },
     {
-      header: 'Transaction ID',
+      header: t('transaction_id'),
       accessor: 'id',
     },
     {
-      header: 'Amount',
+      header: t('amount'),
       accessor: (row) => (
         <span className="font-semibold">₹{row.amount.toLocaleString()}</span>
       ),
     },
     {
-      header: 'Type',
+      header: t('type'),
       accessor: (row) => (
         <Badge variant={row.type === 'CREDIT' ? 'success' : 'danger'}>
-          {row.type}
+          {row.type === 'CREDIT' ? t('credit') : t('debit')}
         </Badge>
       ),
     },
-    /*{
-      header: 'KYC Status',
-      accessor: (row) => {
-        if (row.kycStatus === 'N/A') {
-          return <Badge variant="default">N/A</Badge>;
-        }
-        return (
-          <Badge
-            variant={row.kycStatus === 'COMPLETED' ? 'success' : 'warning'}
-          >
-            {row.kycStatus}
-          </Badge>
-        );
-      },
-    },
     {
-      header: 'Bill',
+      header: t('actions'),
       accessor: (row) => (
-        <Badge variant={row.billId ? 'success' : 'default'}>
-          {row.billId ? 'Yes' : 'No'}
-        </Badge>
-      ),
-    },*/
-    {
-      header: 'Actions',
-      accessor: (row) => (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {row.kycStatus === 'PENDING' && (
             <Button
               size="sm"
               variant="primary"
               onClick={() => openKycForm(row)}
             >
-              KYC
+              {t('kyc')}
             </Button>
           )}
           {row.type === 'CREDIT' && !row.billId && (
@@ -359,7 +337,7 @@ export default function Transactions() {
               variant="success"
               onClick={() => handleGenerateBill(row.id)}
             >
-              Bill
+              {t('bill')}
             </Button>
           )}
           <Button
@@ -384,7 +362,7 @@ export default function Transactions() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Loading transactions...</p>
+        <p className="text-gray-500">{t('loading_transactions')}</p>
       </div>
     );
   }
@@ -392,67 +370,68 @@ export default function Transactions() {
   return (
     <div className="space-y-6">
       <Card
-        title="Upload Bank Statement"
+        title={t('upload_statement')}
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => openTransactionModal()}>
-              <Plus size={18} className="mr-2 inline" />
-              Add Transaction
+              <Plus size={18} className="mr-0 sm:mr-2 inline" />
+              <span className="hidden sm:inline">{t('add_transaction')}</span>
+              <span className="sm:hidden">{t('add')}</span>
             </Button>
             <Button variant="primary" onClick={() => setShowUploadModal(true)}>
-              <Upload size={18} className="mr-2 inline" />
-              Upload Statement
+              <Upload size={18} className="mr-0 sm:mr-2 inline" />
+              <span className="hidden sm:inline">{t('upload_statement')}</span>
+              <span className="sm:hidden">{t('upload')}</span>
             </Button>
           </div>
         }
       >
         <p className="text-sm text-gray-600">
-          Upload your bank statement (PDF or CSV) to automatically parse
-          transactions.
+          {t('bank_statement_desc')}
         </p>
       </Card>
 
-      <Card title="Filters">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <Card title={t('filters')}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Select
-            label="Type"
+            label={t('type')}
             value={filters.type}
             onChange={(value) => setFilters({ ...filters, type: value })}
             options={[
-              { value: '', label: 'All' },
-              { value: 'CREDIT', label: 'Credit' },
-              { value: 'DEBIT', label: 'Debit' },
+              { value: '', label: t('all') },
+              { value: 'CREDIT', label: t('credit') },
+              { value: 'DEBIT', label: t('debit') },
             ]}
           />
 
           <Select
-            label="Amount"
+            label={t('amount')}
             value={filters.amountFilter}
             onChange={(value) =>
               setFilters({ ...filters, amountFilter: value })
             }
             options={[
-              { value: '', label: 'All Amounts' },
+              { value: '', label: t('all_amounts') },
               { value: 'above50k', label: '≥ ₹50,000' },
             ]}
           />
 
           <Input
-            label="Search Sender"
+            label={t('search_sender')}
             value={filters.search}
             onChange={(value) => setFilters({ ...filters, search: value })}
-            placeholder="Search by name..."
+            placeholder={t('search_placeholder')}
           />
 
           <Input
-            label="Date From"
+            label={t('date_from')}
             type="date"
             value={filters.dateFrom}
             onChange={(value) => setFilters({ ...filters, dateFrom: value })}
           />
 
           <Input
-            label="Date To"
+            label={t('date_to')}
             type="date"
             value={filters.dateTo}
             onChange={(value) => setFilters({ ...filters, dateTo: value })}
@@ -460,7 +439,7 @@ export default function Transactions() {
         </div>
       </Card>
 
-      <Card title={`Transactions (${filteredTransactions.length})`}>
+      <Card title={`${t('transactions')} (${filteredTransactions.length})`}>
         <Table
           columns={columns}
           data={paginatedData}
@@ -478,16 +457,16 @@ export default function Transactions() {
       <Modal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
-        title="Upload Bank Statement"
+        title={t('upload_statement')}
         size="md"
       >
         <div className="space-y-4">
           <Select
-            label="Select Bank"
+            label={t('select_bank')}
             value={selectedBank}
             onChange={(value) => setSelectedBank(value)}
             options={[
-              { value: '', label: 'Select Bank Check' },
+              { value: '', label: t('select_bank_check') },
               { value: 'City Union Bank', label: 'City Union Bank' },
               { value: 'Indian Bank', label: 'Indian Bank' },
               { value: 'Karur Vysya Bank', label: 'Karur Vysya Bank' },
@@ -495,7 +474,7 @@ export default function Transactions() {
           />
           <FileUploader onFileSelect={handleFileUpload} accept=".pdf,.csv" />
           {uploading && (
-            <p className="text-center text-gray-600">Uploading...</p>
+            <p className="text-center text-gray-600">{t('loading')}</p>
           )}
         </div>
       </Modal>
@@ -503,19 +482,19 @@ export default function Transactions() {
       <Modal
         isOpen={showKycModal}
         onClose={() => setShowKycModal(false)}
-        title="KYC Form"
+        title={t('kyc_form')}
         size="md"
       >
         <div className="space-y-4">
           <Input
-            label="Customer Name"
+            label={t('customer_name')}
             value={kycForm.name}
             onChange={(value) => setKycForm({ ...kycForm, name: value })}
             required
           />
 
           <Input
-            label="PAN Number"
+            label={t('pan_number')}
             value={kycForm.pan}
             onChange={(value) =>
               setKycForm({ ...kycForm, pan: value.toUpperCase() })
@@ -525,7 +504,7 @@ export default function Transactions() {
           />
 
           <Input
-            label="Aadhaar Last 4 Digits"
+            label={t('aadhaar_last_4')}
             value={kycForm.aadhaarLast4}
             onChange={(value) =>
               setKycForm({ ...kycForm, aadhaarLast4: value })
@@ -535,7 +514,7 @@ export default function Transactions() {
           />
 
           <Input
-            label="GST Number"
+            label={t('gst_number')}
             value={kycForm.gst || ''}
             onChange={(value) =>
               setKycForm((prev) => ({ ...prev, gst: value.toUpperCase() }))
@@ -546,7 +525,7 @@ export default function Transactions() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Notes
+              {t('notes')}
             </label>
             <textarea
               value={kycForm.notes}
@@ -555,16 +534,16 @@ export default function Transactions() {
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               rows={4}
-              placeholder="Additional notes..."
+              placeholder={t('notes')}
             />
           </div>
 
           <div className="flex gap-3 justify-end pt-4">
             <Button variant="outline" onClick={() => setShowKycModal(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button variant="success" onClick={handleSaveKyc}>
-              Save KYC
+              {t('save_kyc')}
             </Button>
           </div>
         </div>
@@ -575,15 +554,15 @@ export default function Transactions() {
         onClose={() => setShowTransactionModal(false)}
         title={
           transactionModalMode === 'add'
-            ? 'Add Transaction'
-            : 'Edit Transaction'
+            ? t('add_transaction')
+            : t('edit')
         }
         size="md"
       >
         <div className="space-y-4">
           {transactionModalMode === 'edit' && selectedTransaction && (
             <Input
-              label="Transaction ID"
+              label={t('transaction_id')}
               value={selectedTransaction.id}
               onChange={() => { }}
               readOnly
@@ -592,7 +571,7 @@ export default function Transactions() {
           )}
 
           <Input
-            label="Date"
+            label={t('date')}
             type="date"
             value={transactionForm.date}
             onChange={(value) =>
@@ -602,17 +581,17 @@ export default function Transactions() {
           />
 
           <Input
-            label="Sender/Receiver"
+            label={t('sender_receiver')}
             value={transactionForm.sender}
             onChange={(value) =>
               setTransactionForm({ ...transactionForm, sender: value })
             }
-            placeholder="Name of person/entity"
+            placeholder={t('name_placeholder')}
             required
           />
 
           <Input
-            label="Particulars"
+            label={t('particulars')}
             value={transactionForm.particulars}
             onChange={(value) =>
               setTransactionForm({
@@ -620,12 +599,12 @@ export default function Transactions() {
                 particulars: value,
               })
             }
-            placeholder="UPI/NEFT/IMPS details..."
+            placeholder={t('details_placeholder')}
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Amount"
+              label={t('amount')}
               type="number"
               value={transactionForm.amount.toString()}
               onChange={(value) =>
@@ -638,7 +617,7 @@ export default function Transactions() {
             />
 
             <Select
-              label="Type"
+              label={t('type')}
               value={transactionForm.type}
               onChange={(value) =>
                 setTransactionForm({
@@ -647,8 +626,8 @@ export default function Transactions() {
                 })
               }
               options={[
-                { value: 'CREDIT', label: 'Credit' },
-                { value: 'DEBIT', label: 'Debit' },
+                { value: 'CREDIT', label: t('credit') },
+                { value: 'DEBIT', label: t('debit') },
               ]}
             />
           </div>
@@ -658,12 +637,12 @@ export default function Transactions() {
               variant="outline"
               onClick={() => setShowTransactionModal(false)}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button variant="primary" onClick={handleSaveTransaction}>
               {transactionModalMode === 'add'
-                ? 'Add Transaction'
-                : 'Update Transaction'}
+                ? t('add_transaction')
+                : t('update')}
             </Button>
           </div>
         </div>

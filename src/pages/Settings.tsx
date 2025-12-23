@@ -6,8 +6,10 @@ import { Save } from 'lucide-react';
 import { api } from '../api/api';
 import { useAlert } from '../context/AlertContext';
 import { useLoading } from '../context/LoadingContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Settings() {
+  const { t } = useLanguage();
   const [billingSettings, setBillingSettings] = useState({
     serialPrefix: '',
   });
@@ -34,10 +36,10 @@ export default function Settings() {
       try {
         setLoading(true);
         await api.saveSettings(billingSettings.serialPrefix);
-        showAlert('Settings saved successfully!', 'Success', 'success');
+        showAlert(t('settings_saved'), t('success'), 'success');
       } catch (error) {
         console.error('Error saving settings:', error);
-        showAlert('Error saving settings', 'Error', 'error');
+        showAlert('Error saving settings', t('error'), 'error');
       } finally {
         setLoading(false);
       }
@@ -46,11 +48,11 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
-      <Card title="Invoice Sequence">
+      <Card title={t('invoice_sequence')}>
         <div className="space-y-6">
           <div className="max-w-md">
             <Input
-              label="Starting Sequence Number"
+              label={t('starting_sequence')}
               value={billingSettings.serialPrefix}
               onChange={(value) =>
                 setBillingSettings({ ...billingSettings, serialPrefix: value })
@@ -58,7 +60,7 @@ export default function Settings() {
               placeholder="2024"
             />
             <p className="text-xs text-gray-500 mt-2">
-              Invoice number sequence starts from this number
+              {t('sequence_help')}
             </p>
           </div>
 
@@ -69,9 +71,8 @@ export default function Settings() {
               disabled={loading}
             >
               <Save size={18} className="mr-2 inline" />
-              {loading ? 'Saving...' : 'Save Settings'}
+              {loading ? t('saving') : t('save_settings')}
             </Button>
-
           </div>
         </div>
       </Card>

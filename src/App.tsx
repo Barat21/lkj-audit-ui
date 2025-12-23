@@ -10,6 +10,7 @@ import Settings from './pages/Settings';
 import LoginPage from './pages/LoginPage';
 import { AlertProvider } from './context/AlertContext';
 import { LoadingProvider } from './context/LoadingContext';
+import { LanguageProvider } from './context/LanguageContext';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -76,14 +77,16 @@ function App() {
   return (
     <AlertProvider>
       <LoadingProvider>
-        <Layout
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          title={getPageTitle()}
-          onLogout={handleLogout}
-        >
-          {renderPage()}
-        </Layout>
+        <LanguageProvider>
+          <Layout
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            title={getPageTitle()}
+            onLogout={handleLogout}
+          >
+            {renderPage()}
+          </Layout>
+        </LanguageProvider>
       </LoadingProvider>
     </AlertProvider>
   );
