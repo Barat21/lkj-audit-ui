@@ -29,8 +29,11 @@ export const translations = {
         saving: 'Saving...',
         action: 'Action',
         send: 'Send',
+        print: 'Print',
+        print_kyc_sheets: 'Print KYC Sheets',
 
         // Transactions
+
         add_transaction: 'Add Transaction',
         upload_statement: 'Upload Statement',
         filters: 'Filters',

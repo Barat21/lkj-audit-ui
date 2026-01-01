@@ -6,7 +6,7 @@ import Modal from '../components/ui/Modal';
 import Input from '../components/ui/Input';
 import { api } from '../api/api';
 import { Transaction } from '../api/mockData';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Printer } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
 import { useLoading } from '../context/LoadingContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -56,6 +56,10 @@ export default function KYCRequired() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   const openKycForm = (transaction: Transaction) => {
@@ -155,22 +159,116 @@ export default function KYCRequired() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">
+      <div className="print:hidden">
+        <Card>
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800">
+                {t('kyc_required_title')}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {t('kyc_required_desc')}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handlePrint}
+              className="flex items-center gap-2"
+            >
+              <Printer size={18} />
+              {t('print_kyc_sheets')}
+            </Button>
+          </div>
+
+          <Table
+            columns={columns}
+            data={transactions}
+            keyExtractor={(row) => row.id}
+          />
+        </Card>
+      </div>
+
+      {/* Print Only Section */}
+      <div className="hidden print:block !m-0 !p-0">
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          @media print {
+            @page {
+              size: A4 portrait;
+              margin: 15mm;
+            }
+            body, html {
+              height: auto !important;
+              overflow: visible !important;
+              background: white !important;
+              color: black !important;
+              -webkit-print-color-adjust: exact;
+            }
+            #root, .App {
+              height: auto !important;
+              overflow: visible !important;
+            }
+            tr {
+              page-break-inside: avoid;
+            }
+            thead {
+              display: table-header-group;
+            }
+          }
+        `}} />
+
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold uppercase tracking-tight text-gray-900 border-b-2 border-gray-900 pb-2 inline-block">
             {t('kyc_required_title')}
-          </h3>
-          <p className="text-sm text-gray-600 mt-1">
-            {t('kyc_required_desc')}
+          </h1>
+          <p className="text-xs text-gray-500 mt-2">
+            Generated: {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}
           </p>
         </div>
 
-        <Table
-          columns={columns}
-          data={transactions}
-          keyExtractor={(row) => row.id}
-        />
-      </Card>
+        <table className="w-full border-collapse border-2 border-gray-900 table-fixed">
+          <thead>
+            <tr className="bg-gray-100 text-[10px]">
+              <th className="border border-gray-900 p-2 text-left w-[12%]">{t('date')}</th>
+              <th className="border border-gray-900 p-2 text-left w-[25%]">{t('customer_name')}</th>
+              <th className="border border-gray-900 p-2 text-right w-[13%]">{t('amount')}</th>
+              <th className="border border-gray-900 p-2 text-left w-[12%]">PAN</th>
+              <th className="border border-gray-900 p-2 text-left w-[12%]">AADHAAR</th>
+              <th className="border border-gray-900 p-2 text-left w-[12%]">GST</th>
+              <th className="border border-gray-900 p-2 text-left w-[14%]">{t('notes')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transactions.map((txn) => (
+              <tr key={txn.id} className="h-16">
+                <td className="border border-gray-900 p-2 text-[10px] whitespace-nowrap">{txn.date}</td>
+                <td className="border border-gray-900 p-2 font-semibold text-[11px] break-words uppercase">{txn.sender}</td>
+                <td className="border border-gray-900 p-2 text-right font-bold text-[11px]">₹{txn.amount.toLocaleString()}</td>
+                <td className="border border-gray-900 p-2 tracking-widest text-gray-300">__________</td>
+                <td className="border border-gray-900 p-2 tracking-widest text-gray-300">__________</td>
+                <td className="border border-gray-900 p-2 tracking-widest text-gray-300">__________</td>
+                <td className="border border-gray-900 p-2 font-semibold text-[11px] break-words uppercase">
+                  {txn.particulars}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="mt-8 flex justify-between items-end border-t border-gray-300 pt-6">
+          <div className="text-[10px] text-gray-600 space-y-2">
+            <p className="font-bold uppercase tracking-wider">{t('notes')}:</p>
+            <div className="w-80 border-b border-gray-300 h-6"></div>
+            <div className="w-80 border-b border-gray-300 h-6"></div>
+            <p className="italic mt-2">* Hand over filled sheet to auditor for system entry.</p>
+          </div>
+          <div className="text-center mr-10">
+            <div className="w-40 border-b-2 border-gray-900 mb-2 h-12"></div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-800">Verified By</p>
+          </div>
+        </div>
+      </div>
+
 
       <Modal
         isOpen={showKycModal}
