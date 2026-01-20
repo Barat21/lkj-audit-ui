@@ -1,5 +1,6 @@
 import { Bell, User, LogOut, Menu, Languages } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface HeaderProps {
   title: string;
@@ -9,6 +10,7 @@ interface HeaderProps {
 
 export default function Header({ title, onLogout, onMenuClick }: HeaderProps) {
   const { language, setLanguage, t } = useLanguage();
+  const { user } = useAuth();
 
   return (
     <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 sticky top-0 z-30">
@@ -37,15 +39,15 @@ export default function Header({ title, onLogout, onMenuClick }: HeaderProps) {
             </span>
           </button>
 
-          <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          {/* <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
             <Bell size={20} />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+          </button> */}
 
           <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-gray-200">
             <div className="hidden sm:block text-right">
-              <p className="text-sm font-medium text-gray-800">Admin User</p>
-              <p className="text-xs text-gray-500">admin@company.com</p>
+              <p className="text-sm font-medium text-gray-800">{user?.username || 'User'}</p>
+              <p className="text-xs text-gray-500">{user?.company || 'No Company'}</p>
             </div>
             <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-full flex items-center justify-center">
               <User size={18} className="text-white" />

@@ -13,6 +13,7 @@ import { Upload, Plus, Edit2, Trash2 } from 'lucide-react';
 import { useAlert } from '../context/AlertContext';
 import { useLoading } from '../context/LoadingContext';
 import { useLanguage } from '../context/LanguageContext';
+import { formatDateToAPI, formatDateFromAPI } from '../utils/dateUtils';
 
 export default function Transactions() {
   const { t } = useLanguage();
@@ -64,9 +65,21 @@ export default function Transactions() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
+  const [kycLimit, setKycLimit] = useState<number>(50000);
+
   useEffect(() => {
     loadTransactions();
+    loadKycLimit();
   }, []);
+
+  const loadKycLimit = async () => {
+    try {
+      const data = await api.getKycLimit();
+      setKycLimit(data?.amount ?? 50000);
+    } catch (error) {
+      console.error('Error loading KYC limit:', error);
+    }
+  };
 
   useEffect(() => {
     applyFilters();
@@ -91,8 +104,8 @@ export default function Transactions() {
       filtered = filtered.filter((t) => t.type === filters.type);
     }
 
-    if (filters.amountFilter === 'above50k') {
-      filtered = filtered.filter((t) => t.amount >= 50000);
+    if (filters.amountFilter === 'aboveLimit') {
+      filtered = filtered.filter((t) => t.amount >= kycLimit);
     }
 
     if (filters.search) {
@@ -103,11 +116,11 @@ export default function Transactions() {
     }
 
     if (filters.dateFrom) {
-      filtered = filtered.filter((t) => t.date >= filters.dateFrom);
+      filtered = filtered.filter((t) => formatDateFromAPI(t.date) >= filters.dateFrom);
     }
 
     if (filters.dateTo) {
-      filtered = filtered.filter((t) => t.date <= filters.dateTo);
+      filtered = filtered.filter((t) => formatDateFromAPI(t.date) <= filters.dateTo);
     }
 
     // Sort to show PENDING KYC first
@@ -216,7 +229,7 @@ export default function Transactions() {
     if (transaction) {
       setTransactionModalMode('edit');
       setTransactionForm({
-        date: transaction.date,
+        date: formatDateFromAPI(transaction.date),
         sender: transaction.sender,
         particulars: transaction.particulars,
         amount: transaction.amount,
@@ -251,6 +264,7 @@ export default function Transactions() {
       try {
         const payload = {
           ...transactionForm,
+          date: formatDateToAPI(transactionForm.date),
           ...(transactionModalMode === 'edit' && selectedTransaction
             ? { id: selectedTransaction.id }
             : {}),
@@ -412,7 +426,7 @@ export default function Transactions() {
             }
             options={[
               { value: '', label: t('all_amounts') },
-              { value: 'above50k', label: '≥ ₹50,000' },
+              { value: 'aboveLimit', label: `≥ ₹${kycLimit.toLocaleString()}` },
             ]}
           />
 

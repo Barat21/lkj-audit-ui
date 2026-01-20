@@ -1,27 +1,28 @@
 import { useState } from 'react';
 import { Lock, User, LogIn } from 'lucide-react';
 import Button from '../components/ui/Button';
+import { api } from '../api/api';
+import { useAuth } from '../context/AuthContext';
 
-interface LoginPageProps {
-    onLogin: () => void;
-}
-
-export default function LoginPage({ onLogin }: LoginPageProps) {
+export default function LoginPage() {
+    const { login } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
+        setIsLoading(true);
 
-        // Get current date in YYYY-MM-DD format
-        const today = new Date().toISOString().split('T')[0];
-        const expectedPassword = `admin${today}`;
-
-        if (username === 'admin' && password === expectedPassword) {
-            onLogin();
-        } else {
-            setError('Invalid username or password');
+        try {
+            const userData = await api.login(username, password);
+            login(userData);
+        } catch (err: any) {
+            setError(err.message || 'Invalid username or password');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -73,14 +74,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                         </div>
                     </div>
 
-                    <Button type="submit" variant="primary" className="w-full py-3">
+                    <Button type="submit" variant="primary" className="w-full py-3" disabled={isLoading}>
                         <LogIn size={18} className="mr-2" />
-                        Sign In
+                        {isLoading ? 'Signing In...' : 'Sign In'}
                     </Button>
 
                     <div className="text-center">
                         <p className="text-xs text-gray-400">
-                            Admin access required. Contact system administrator for help.
+                            Authorized access only. Audit logs are being recorded.
                         </p>
                     </div>
                 </form>

@@ -46,9 +46,13 @@ export default function KYCRequired() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const allTransactions = await api.getTransactions();
+      const [allTransactions, kycLimitData] = await Promise.all([
+        api.getTransactions(),
+        api.getKycLimit()
+      ]);
+      const limit = kycLimitData?.amount ?? 50000;
       const pendingKyc = allTransactions.filter(
-        (t) => t.amount >= 50000 && t.kycStatus === 'PENDING'
+        (t) => t.amount >= limit && t.kycStatus === 'PENDING'
       );
       setTransactions(pendingKyc);
     } catch (error) {

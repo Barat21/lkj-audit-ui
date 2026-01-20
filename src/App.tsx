@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
@@ -11,21 +11,15 @@ import LoginPage from './pages/LoginPage';
 import { AlertProvider } from './context/AlertContext';
 import { LoadingProvider } from './context/LoadingContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
-function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    localStorage.getItem('isLoggedIn') === 'true'
-  );
-  const [activeTab, setActiveTab] = useState('dashboard');
+function AppContent() {
+  const { isLoggedIn, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('transactions');
 
-  useEffect(() => {
-    localStorage.setItem('isLoggedIn', String(isLoggedIn));
-  }, [isLoggedIn]);
-
-  const handleLogin = () => setIsLoggedIn(true);
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    setActiveTab('dashboard');
+    logout();
+    setActiveTab('transactions');
   };
 
   const getPageTitle = () => {
@@ -45,7 +39,7 @@ function App() {
       case 'settings':
         return 'Settings';
       default:
-        return 'Dashboard';
+        return 'Transactions';
     }
   };
 
@@ -66,29 +60,37 @@ function App() {
       case 'settings':
         return <Settings />;
       default:
-        return <Dashboard />;
+        return <Transactions />;
     }
   };
 
   if (!isLoggedIn) {
-    return <LoginPage onLogin={handleLogin} />;
+    return <LoginPage />;
   }
 
   return (
-    <AlertProvider>
-      <LoadingProvider>
-        <LanguageProvider>
-          <Layout
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            title={getPageTitle()}
-            onLogout={handleLogout}
-          >
-            {renderPage()}
-          </Layout>
-        </LanguageProvider>
-      </LoadingProvider>
-    </AlertProvider>
+    <Layout
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      title={getPageTitle()}
+      onLogout={handleLogout}
+    >
+      {renderPage()}
+    </Layout>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AlertProvider>
+        <LoadingProvider>
+          <LanguageProvider>
+            <AppContent />
+          </LanguageProvider>
+        </LoadingProvider>
+      </AlertProvider>
+    </AuthProvider>
   );
 }
 

@@ -17,15 +17,45 @@ let billCounter = 3;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const getBaseHeaders = () => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  const companyName = sessionStorage.getItem('companyName');
+  if (companyName) {
+    headers['X-Company-Name'] = companyName;
+  }
+  return headers;
+};
+
 export const api = {
+  login: async (username: string, password: string): Promise<any> => {
+    const response = await fetch('http://localhost:9090/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password, company: "" }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Invalid credentials');
+    }
+
+    return await response.json();
+  },
+
   getTransactions: async (): Promise<Transaction[]> => {
     try {
-      const response = await fetch('https://lkjaudit-api-latest.onrender.com/api/transactions');
+      const response = await fetch('http://localhost:9090/api/transactions', {
+        headers: getBaseHeaders(),
+      });
       if (!response.ok) {
         throw new Error(`Error fetching transactions: ${response.statusText}`);
       }
       const data = await response.json();
-      transactions = data; // Update local cache so other mock functions might work with real data
+      transactions = data;
       return data;
     } catch (error) {
       console.error('Failed to get transactions', error);
@@ -39,8 +69,11 @@ export const api = {
       formData.append('file', file);
       formData.append('bankName', bankName);
 
-      const response = await fetch('https://lkjaudit-api-latest.onrender.com/api/upload-statement', {
+      const response = await fetch('http://localhost:9090/api/upload-statement', {
         method: 'POST',
+        headers: {
+          'X-Company-Name': sessionStorage.getItem('companyName') || '',
+        },
         body: formData,
       });
 
@@ -48,8 +81,6 @@ export const api = {
         throw new Error(`Error uploading statement: ${response.statusText}`);
       }
 
-      // We don't strictly need to return the new transactions here as the UI re-fetches
-      // But we'll return an empty array to match signature
       return [];
     } catch (error) {
       console.error('Failed to upload statement', error);
@@ -67,13 +98,9 @@ export const api = {
         transactionIds: kycData.linkedTransactions,
       };
 
-      console.log('Sending KYC Payload:', payload);
-
-      const response = await fetch('https://lkjaudit-api-latest.onrender.com/api/kyc', {
+      const response = await fetch('http://localhost:9090/api/kyc', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getBaseHeaders(),
         body: JSON.stringify(payload),
       });
 
@@ -83,23 +110,12 @@ export const api = {
 
       const responseData = await response.json();
 
-      // Update local cache to reflect changes in UI immediately without reload if needed
-      // But standard way is to return the data
-
-      // We also need to update the transactions locally to show 'COMPLETED' status
-      // This is a bit of a hybrid approach since we are mixing mock data with real API calls
-      // ideally we should re-fetch transactions from the server.
-
-      // Let's rely on the caller to reload data, but we can update the mock cache if we desire 
-      // strict consistency with the mock behavior we had before.
-
       const newKyc: KYC = {
         id: responseData.id || `kyc_${Date.now()}`,
         ...kycData,
         updatedAt: new Date().toISOString().split('T')[0],
       };
 
-      // Update local mock store just in case other parts of the app rely on it
       kycs = [...kycs, newKyc];
       transactions = transactions.map((t) =>
         kycData.linkedTransactions.includes(t.id)
@@ -195,7 +211,12 @@ export const api = {
   exportMonthlyData: async (month: number, year: number): Promise<Blob> => {
     try {
       const response = await fetch(
-        `https://lkjaudit-api-latest.onrender.com/api/auditor/bills/download?year=${year}&month=${month}`
+        `http://localhost:9090/api/auditor/bills/download?year=${year}&month=${month}`,
+        {
+          headers: {
+            'X-Company-Name': sessionStorage.getItem('companyName') || '',
+          }
+        }
       );
       if (!response.ok) {
         throw new Error(`Error exporting data: ${response.statusText}`);
@@ -210,9 +231,12 @@ export const api = {
   getSuggestions: async (customerName: string) => {
     try {
       const response = await fetch(
-        `https://lkjaudit-api-latest.onrender.com/api/kyc/autocomplete?name=${encodeURIComponent(
+        `http://localhost:9090/api/kyc/autocomplete?name=${encodeURIComponent(
           customerName
-        )}`
+        )}`,
+        {
+          headers: getBaseHeaders(),
+        }
       );
       if (!response.ok) {
         throw new Error(`Error fetching suggestions: ${response.statusText}`);
@@ -232,7 +256,9 @@ export const api = {
 
   getSettings: async (): Promise<{ lastSerial: string }> => {
     try {
-      const response = await fetch('https://lkjaudit-api-latest.onrender.com/api/settings');
+      const response = await fetch('http://localhost:9090/api/settings', {
+        headers: getBaseHeaders(),
+      });
       if (!response.ok) {
         throw new Error(`Error fetching settings: ${response.statusText}`);
       }
@@ -246,9 +272,10 @@ export const api = {
   saveSettings: async (lastSerial: string): Promise<void> => {
     try {
       const response = await fetch(
-        `https://lkjaudit-api-latest.onrender.com/api/saveSettings?lastSerial=${lastSerial}`,
+        `http://localhost:9090/api/saveSettings?lastSerial=${lastSerial}`,
         {
           method: 'POST',
+          headers: getBaseHeaders(),
         }
       );
       if (!response.ok) {
@@ -260,12 +287,83 @@ export const api = {
     }
   },
 
+  // Vehicle Config APIs
+  getVehicles: async (): Promise<any[]> => {
+    const response = await fetch('http://localhost:9090/api/config/vehicles', {
+      headers: getBaseHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch vehicles');
+    return await response.json();
+  },
+
+  saveVehicle: async (vehicle: { id?: string; vehicleNumber: string }): Promise<void> => {
+    const response = await fetch('http://localhost:9090/api/config/vehicles', {
+      method: 'POST',
+      headers: getBaseHeaders(),
+      body: JSON.stringify(vehicle),
+    });
+    if (!response.ok) throw new Error('Failed to save vehicle');
+  },
+
+  deleteVehicle: async (id: string): Promise<void> => {
+    const response = await fetch(`http://localhost:9090/api/config/vehicles/${id}`, {
+      method: 'DELETE',
+      headers: getBaseHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to delete vehicle');
+  },
+
+  // Rice Rate Config APIs
+  getRiceRates: async (): Promise<any[]> => {
+    const response = await fetch('http://localhost:9090/api/config/rice-rates', {
+      headers: getBaseHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch rice rates');
+    return await response.json();
+  },
+
+  saveRiceRate: async (riceRate: { riceType: string; minRate: number; maxRate: number }): Promise<void> => {
+    const response = await fetch('http://localhost:9090/api/config/rice-rates', {
+      method: 'POST',
+      headers: getBaseHeaders(),
+      body: JSON.stringify(riceRate),
+    });
+    if (!response.ok) throw new Error('Failed to save rice rate');
+  },
+
+  deleteRiceRate: async (riceType: string): Promise<void> => {
+    const response = await fetch(`http://localhost:9090/api/config/rice-rates/${encodeURIComponent(riceType)}`, {
+      method: 'DELETE',
+      headers: getBaseHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to delete rice rate');
+  },
+
+  // KYC Limit Config APIs
+  getKycLimit: async (): Promise<{ amount: number }> => {
+    const response = await fetch('http://localhost:9090/api/config/kyc-limit', {
+      headers: getBaseHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch KYC limit');
+    return await response.json();
+  },
+
+  saveKycLimit: async (amount: number): Promise<void> => {
+    const response = await fetch('http://localhost:9090/api/config/kyc-limit', {
+      method: 'POST',
+      headers: getBaseHeaders(),
+      body: JSON.stringify({ amount }),
+    });
+    if (!response.ok) throw new Error('Failed to save KYC limit');
+  },
+
   cleanupData: async (month: number, year: number): Promise<{ message: string }> => {
     try {
       const response = await fetch(
-        `https://lkjaudit-api-latest.onrender.com/api/bills/cleanup?year=${year}&month=${month}`,
+        `http://localhost:9090/api/bills/cleanup?year=${year}&month=${month}`,
         {
           method: 'DELETE',
+          headers: getBaseHeaders(),
         }
       );
       if (!response.ok) {
@@ -283,12 +381,10 @@ export const api = {
   ): Promise<Transaction> => {
     try {
       const response = await fetch(
-        'https://lkjaudit-api-latest.onrender.com/api/transactions/save',
+        'http://localhost:9090/api/transactions/save',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getBaseHeaders(),
           body: JSON.stringify(transaction),
         }
       );
@@ -305,9 +401,10 @@ export const api = {
   deleteTransaction: async (id: string): Promise<void> => {
     try {
       const response = await fetch(
-        `https://lkjaudit-api-latest.onrender.com/api/transactions/delete?id=${id}`,
+        `http://localhost:9090/api/transactions/delete?id=${id}`,
         {
           method: 'DELETE',
+          headers: getBaseHeaders(),
         }
       );
       if (!response.ok) {

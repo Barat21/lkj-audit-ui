@@ -19,11 +19,11 @@ interface SidebarProps {
 }
 
 const menuItems: { id: string; labelKey: TranslationKey; icon: any }[] = [
-  { id: 'dashboard', labelKey: 'dashboard', icon: LayoutDashboard },
+  //{ id: 'dashboard', labelKey: 'dashboard', icon: LayoutDashboard },
   { id: 'transactions', labelKey: 'transactions', icon: ArrowLeftRight },
   { id: 'kyc-required', labelKey: 'kyc_required', icon: UserX },
   { id: 'kyc-completed', labelKey: 'kyc_completed', icon: UserCheck },
-  { id: 'tds-monitor', labelKey: 'tds_monitor', icon: TrendingUp },
+  // { id: 'tds-monitor', labelKey: 'tds_monitor', icon: TrendingUp },
   { id: 'bills-export', labelKey: 'bills_export', icon: FileText },
   { id: 'settings', labelKey: 'settings', icon: Settings },
 ];
@@ -77,8 +77,8 @@ export default function Sidebar({
                       if (onToggle) onToggle();
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                        : 'text-slate-300 hover:bg-slate-800'
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
+                      : 'text-slate-300 hover:bg-slate-800'
                       }`}
                   >
                     <Icon size={20} />
@@ -95,7 +95,7 @@ export default function Sidebar({
             <p>
               {t('version')} 1.0.0
             </p>
-            <p className="mt-1">{t('mock_mode')}</p>
+            {/* <p className="mt-1">{t('mock_mode')}</p> */}
           </div>
         </div>
       </aside>

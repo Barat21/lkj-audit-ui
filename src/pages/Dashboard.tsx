@@ -5,6 +5,7 @@ import SimplePieChart from '../components/ui/SimplePieChart';
 import { api } from '../api/api';
 import { Transaction } from '../api/mockData';
 import { useLanguage } from '../context/LanguageContext';
+import { formatDateFromAPI } from '../utils/dateUtils';
 import {
   TrendingUp,
   TrendingDown,
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const { t } = useLanguage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [kycLimit, setKycLimit] = useState<number>(50000);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,12 +28,14 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [txns, monthly] = await Promise.all([
+      const [txns, monthly, kycData] = await Promise.all([
         api.getTransactions(),
         api.getMonthlyData(),
+        api.getKycLimit(),
       ]);
       setTransactions(txns);
       setMonthlyData(monthly);
+      setKycLimit(kycData?.amount ?? 50000);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -41,7 +45,7 @@ export default function Dashboard() {
 
   const currentMonth = new Date().getMonth();
   const currentMonthTxns = transactions.filter((t) => {
-    const txnMonth = new Date(t.date).getMonth();
+    const txnMonth = new Date(formatDateFromAPI(t.date)).getMonth();
     return txnMonth === currentMonth;
   });
 
@@ -53,8 +57,8 @@ export default function Dashboard() {
     .filter((t) => t.type === 'DEBIT')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const creditsAbove50k = transactions.filter(
-    (t) => t.type === 'CREDIT' && t.amount >= 50000
+  const creditsAboveLimit = transactions.filter(
+    (t) => t.type === 'CREDIT' && t.amount >= kycLimit
   ).length;
 
   const pendingKyc = transactions.filter((t) => t.kycStatus === 'PENDING')
@@ -81,8 +85,8 @@ export default function Dashboard() {
       bgColor: 'bg-red-100',
     },
     {
-      title: t('credits_above_50k'),
-      value: creditsAbove50k.toString(),
+      title: t('credits_above_50k').replace('50k', `${kycLimit / 1000}k`),
+      value: creditsAboveLimit.toString(),
       icon: AlertCircle,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
